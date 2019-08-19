@@ -43,9 +43,7 @@ export const fetchCities = (countryCode) => dispatch => {
       const list = results.map(result => ({
         name: result.city,
         value: result.value
-      }))
-      //console.log(list);
-      
+      }))      
       const byCityGroupedList = [];
       //grouping measurements by cities
       list.forEach(item => {
@@ -71,42 +69,52 @@ export const fetchCities = (countryCode) => dispatch => {
       byCityGroupedList.sort((a,b) => {
         return a.value < b.value ? 1 : -1
       })
-
       const cityArray = byCityGroupedList.slice(0,10);
-
-      cityArray.forEach(item => {
-        //fetch for search result of the city
-        fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&utf8=&origin=*&format=json&srqiprofile=classic&srlimit=1&srsearch=' + item.name)
-        .then(res => res.json())
-        .then(res => {
-          const search = res.query.search[0].title;
-          //fetch descriptions for every city
-          const url = 'https://en.wikipedia.org/w/api.php?format=json&action=query&origin=*&prop=extracts&exintro&explaintext&titles=' + search;
-          fetch(url)
+      const dispatchPromise = new Promise((resolve, reject) => {
+        let i = 0;
+        cityArray.forEach((item, index) => {
+          //fetch for search result of the city
+          fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&utf8=&origin=*&format=json&srqiprofile=classic&srlimit=1&srsearch=' + item.name)
           .then(res => res.json())
-          .then(res => {      
-            const pages = res.query.pages;
-            const description = pages[Object.keys(pages)[0]].extract;
-            item.description = description;
-            //fetch images
-            fetch('https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&pithumbsize=1000&format=json&origin=*&titles=' + search)
+          .then(res => {
+            const search = res.query.search[0].title;
+            //fetch descriptions for every city
+            fetch('https://en.wikipedia.org/w/api.php?format=json&action=query&origin=*&prop=extracts&exintro&explaintext&titles=' + search)
             .then(res => res.json())
-            .then(res => {
+            .then(res => {      
               const pages = res.query.pages;
-              const image = pages[Object.keys(pages)[0]].thumbnail.source;
-              item.image = image;
-              dispatch({
-                type:FETCH_CITIES,
-                cities: cityArray
-              });
+              const description = pages[Object.keys(pages)[0]].extract;
+              item.description = description;
+              //fetch images
+              fetch('https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&pithumbsize=1000&format=json&origin=*&titles=' + search)
+              .then(res => res.json())
+              .then(res => {
+                const pages = res.query.pages;
+                const image = pages[Object.keys(pages)[0]].thumbnail;
+                if(image) {
+                  item.image = image.source; 
+                }
+              })
+              .catch(err => console.error(err))
+              .finally(() => {
+                if(i === cityArray.length -1) {
+                  resolve(cityArray);
+                } else {
+                  i++;
+                }
+              })
             })
             .catch(err => console.error(err));
           })
           .catch(err => console.error(err));
-        })
-        .catch(err => console.error(err));
-      })
-      //console.log(cityArray)
+        });
+      });
+      dispatchPromise.then(value => {
+        dispatch({
+          type:FETCH_CITIES,
+          cities: value
+        });
+      });
     }
   })
 }
