@@ -33,6 +33,7 @@ export const fetchCountries = () => dispatch => {
 const parameter = 'pm25';
 const requestLimit = 1000;
 
+
 export const fetchCities = (countryCode) => dispatch => {
   fetch('https://api.openaq.org/v1/measurements?country=' + countryCode + '&parameter=' + parameter + '&limit=' + requestLimit)
   .then(res => res.json())

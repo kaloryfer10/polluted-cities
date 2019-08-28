@@ -12,6 +12,7 @@ class AutoCompleteTextInput extends Component {
 
     this.state = {
       suggestions: [],
+      indexActive: -1,
       isAllowed: false
     }
   }
@@ -72,8 +73,38 @@ class AutoCompleteTextInput extends Component {
     });
   }
 
+  onKeyUp(e) {  
+    const {indexActive,suggestions} = this.state;
+    
+    switch(e.keyCode) {
+      case 38: //arrow-up
+        if(indexActive >=0 )
+          this.setState({ indexActive: indexActive - 1})
+        break;
+      case 40: //arrow-down
+        if(indexActive >= -1 && indexActive < suggestions.length -1)
+          this.setState({ indexActive: indexActive + 1})
+        break;
+      case 13: //enter
+        if(indexActive > -1) {
+          this.props.inputValueChange(suggestions[indexActive]);
+          this.setState({suggestions: [], indexActive: -1})
+          this.checkAllowed(suggestions[indexActive])
+        }
+        break;
+      default:
+        this.setState({indexActive: -1})
+        
+    }
+  }
+
+  onMouseOver(e) {
+    e.preventDefault();
+    this.setState({indexActive: null})
+  }
+
   render() {
-    const {suggestions, isAllowed} = this.state;
+    const {suggestions, isAllowed, indexActive} = this.state;
     return (
       <div className="form-wrapper">
         <form className="form">
@@ -85,12 +116,13 @@ class AutoCompleteTextInput extends Component {
             autoComplete="off"
             value={this.props.content.inputValue}
             onChange={e => this.onTextChange(e)}
+            onKeyUp={e => this.onKeyUp(e)}
           ></input>
           {suggestions && suggestions.length ?
             <ul>
             {
               suggestions.map((suggestion, index) => {
-              return <li key={index} onClick={e => this.selectSuggestion(e)}>{suggestion}</li>
+              return <li key={index} onMouseMove={e => this.onMouseOver(e)} style={index === indexActive ? {background: 'rgba(0,0,0,0.1)'} : {}} onClick={e => this.selectSuggestion(e)}>{suggestion}</li>
             })}  
             </ul>
           : null}
